@@ -75,7 +75,7 @@ function renderBondActivity(message=''){const levels=[{min:0,name:'Explorador'},
 function exportBondFlows(){
   if(!lastBondFlows.length){$('error').textContent='Primero calculá un bono para exportar sus flujos.';return}
   const rows=[['Periodo','Interes','Capital','Flujo total'],...lastBondFlows.map(f=>[f.period,f.interest,f.principal,f.total])];
-  const csv='\\uFEFF'+rows.map(row=>row.map(value=>typeof value==='number'?String(value).replace('.',','):value).join(';')).join('\\r\\n');
+  const csv='\uFEFF'+rows.map(row=>row.map(value=>typeof value==='number'?String(value).replace('.',','):value).join(';')).join('\r\n');
   const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
   const url=URL.createObjectURL(blob),a=document.createElement('a');
   a.href=url;a.download='arteche-bonos-flujos.csv';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
