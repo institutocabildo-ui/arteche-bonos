@@ -42,6 +42,7 @@ input:focus,select:focus{outline:0;border-color:var(--mint);box-shadow:0 0 0 3px
 .metrics small{display:block;color:var(--muted);font-size:10px;letter-spacing:.04em}
 .metrics strong{display:block;font-size:clamp(22px,2.5vw,29px);line-height:1.2;letter-spacing:-.04em;margin-top:11px;font-variant-numeric:tabular-nums}
 .cash{margin-top:28px}
+.cash-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}.cash-head h3{margin:0}.cash-head .quiet{border-color:rgba(105,223,184,.28);color:var(--mint);white-space:nowrap}.cash-head .quiet:hover{background:rgba(105,223,184,.08)}
 .cash h3{font-size:14px;margin:0 0 12px}
 .table-wrap{overflow:auto;border:1px solid rgba(92,126,159,.2);border-radius:11px}
 table{width:100%;border-collapse:collapse;font-size:12px}
