@@ -32,7 +32,7 @@ function solveYtm(price,arr){
   }
   return (lo+hi)/2;
 }
-function calculate(e){
+function calculate(e,award=false){
   if(e)e.preventDefault();
   $('error').textContent='';
   const price=+$('price').value,face=+$('face').value,coupon=+$('coupon').value;
@@ -56,11 +56,21 @@ function calculate(e){
     $('pv').textContent=fmt(pv.reduce((a,b)=>a+b,0));
     $('flows').innerHTML=fs.map(f=>'<tr><td>'+f.period+'</td><td>'+fmt(f.interest)+'</td><td>'+fmt(f.principal)+'</td><td>'+fmt(f.total)+'</td></tr>').join('');
     $('state').textContent='CÁLCULO LOCAL';
+    if(award)recordBondActivity();
   }catch(error){
     $('ytm').textContent='—';$('duration').textContent='—';$('modified').textContent='—';$('pv').textContent='—';$('flows').innerHTML='';
     $('error').textContent=error.message||'No se pudo calcular con esos parámetros.';
   }
 }
-$('bond-form').addEventListener('submit',calculate);
+$('bond-form').addEventListener('submit',e=>calculate(e,true));
+
+const BOND_ACTIVITY_KEY='arteche_bonos_activity_v1';
+function readBondActivity(){try{return JSON.parse(localStorage.getItem(BOND_ACTIVITY_KEY))||{points:0,lastDay:null,activeDays:0}}catch{return{points:0,lastDay:null,activeDays:0}}}
+let bondActivity=readBondActivity();
+function localDateKey(){const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')}
+function renderBondActivity(message=''){const levels=[{min:0,name:'Explorador'},{min:100,name:'Analista'},{min:250,name:'Estratega'},{min:500,name:'Mesa Arteche'}];const level=[...levels].reverse().find(x=>bondActivity.points>=x.min)||levels[0];const next=levels.find(x=>x.min>bondActivity.points);const progress=next?Math.min(100,(bondActivity.points-level.min)/(next.min-level.min)*100):100;$('ag-puntos').textContent=bondActivity.points;$('ag-nivel').textContent=level.name;$('ag-barra').style.width=progress+'%';$('ag-actividad').textContent=bondActivity.activeDays+' '+(bondActivity.activeDays===1?'día activo':'días activos');if(message)$('ag-toast').textContent=message}
+function recordBondActivity(){const today=localDateKey();if(bondActivity.lastDay===today)return;const d=new Date();d.setDate(d.getDate()-1);const yesterday=[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');bondActivity.activeDays=bondActivity.lastDay===yesterday?bondActivity.activeDays+1:1;bondActivity.points+=20;bondActivity.lastDay=today;try{localStorage.setItem(BOND_ACTIVITY_KEY,JSON.stringify(bondActivity))}catch{}renderBondActivity('+20 puntos por completar una simulación.')}
+renderBondActivity();
+
 $('bond-form').addEventListener('reset',()=>setTimeout(calculate,0));
 calculate();
