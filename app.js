@@ -1,4 +1,5 @@
 const $=id=>document.getElementById(id);
+let lastBondFlows=[];
 const fmt=(n,d=2)=>Number.isFinite(n)?n.toLocaleString('es-AR',{minimumFractionDigits:d,maximumFractionDigits:d}):'—';
 
 function flows(face,coupon,frequency,periods,amort){
@@ -35,6 +36,7 @@ function solveYtm(price,arr){
 function calculate(e,award=false){
   if(e)e.preventDefault();
   $('error').textContent='';
+  lastBondFlows=[];
   const price=+$('price').value,face=+$('face').value,coupon=+$('coupon').value;
   const frequency=+$('frequency').value,periods=+$('periods').value,amort=$('amort').value;
   if(!(Number.isFinite(price)&&price>0&&Number.isFinite(face)&&face>0&&Number.isFinite(coupon)&&coupon>=0&&[1,2,4,12].includes(frequency)&&Number.isInteger(periods)&&periods>=1&&periods<=200)){
@@ -44,12 +46,13 @@ function calculate(e,award=false){
   try{
     const purchaseCost=price*face/100;
     const fs=flows(face,coupon,frequency,periods,amort);
+    lastBondFlows=fs;
     const periodRate=solveYtm(purchaseCost,fs);
     const annualEffective=Math.pow(1+periodRate,frequency)-1;
     const pv=fs.map((f,i)=>f.total/Math.pow(1+periodRate,i+1));
     const weighted=pv.reduce((s,v,i)=>s+v*(i+1)/frequency,0);
     const macaulay=weighted/purchaseCost;
-    const modified=macaulay/(1+periodRate);
+    const modified=macaulay/(1+annualEffective);
     $('ytm').textContent=fmt(annualEffective*100)+'%';
     $('duration').textContent=fmt(macaulay)+' años';
     $('modified').textContent=fmt(modified)+' años';
@@ -69,6 +72,16 @@ function readBondActivity(){try{return JSON.parse(localStorage.getItem(BOND_ACTI
 let bondActivity=readBondActivity();
 function localDateKey(){const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')}
 function renderBondActivity(message=''){const levels=[{min:0,name:'Explorador'},{min:100,name:'Analista'},{min:250,name:'Estratega'},{min:500,name:'Mesa Arteche'}];const level=[...levels].reverse().find(x=>bondActivity.points>=x.min)||levels[0];const next=levels.find(x=>x.min>bondActivity.points);const progress=next?Math.min(100,(bondActivity.points-level.min)/(next.min-level.min)*100):100;$('ag-puntos').textContent=bondActivity.points;$('ag-nivel').textContent=level.name;$('ag-barra').style.width=progress+'%';$('ag-actividad').textContent=bondActivity.activeDays+' '+(bondActivity.activeDays===1?'día activo':'días activos');if(message)$('ag-toast').textContent=message}
+function exportBondFlows(){
+  if(!lastBondFlows.length){$('error').textContent='Primero calculá un bono para exportar sus flujos.';return}
+  const rows=[['Periodo','Interes','Capital','Flujo total'],...lastBondFlows.map(f=>[f.period,f.interest,f.principal,f.total])];
+  const csv='\\uFEFF'+rows.map(row=>row.map(value=>typeof value==='number'?String(value).replace('.',','):value).join(';')).join('\\r\\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download='arteche-bonos-flujos.csv';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
+}
+$('export-csv').addEventListener('click',exportBondFlows);
+
 function recordBondActivity(){const today=localDateKey();if(bondActivity.lastDay===today)return;const d=new Date();d.setDate(d.getDate()-1);const yesterday=[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');bondActivity.activeDays=bondActivity.lastDay===yesterday?bondActivity.activeDays+1:1;bondActivity.points+=20;bondActivity.lastDay=today;try{localStorage.setItem(BOND_ACTIVITY_KEY,JSON.stringify(bondActivity))}catch{}renderBondActivity('+20 puntos por completar una simulación.')}
 renderBondActivity();
 
